@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Bus.h" />
+    <ClInclude Include="..\include\Clock.h" />
     <ClInclude Include="..\include\common.h" />
     <ClInclude Include="..\include\MP_8085.h" />
     <ClInclude Include="..\include\Pins.h" />

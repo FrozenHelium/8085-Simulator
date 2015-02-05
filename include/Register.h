@@ -57,6 +57,14 @@ public:
     {
         return Register_16_bit(++m_data);
     }
+    Register_8_bit LowByte()
+    {
+        return static_cast<unsigned char>(m_data);
+    }
+    Register_8_bit HighByte()
+    {
+        return static_cast<unsigned char>(m_data >> 8);
+    }
     Register_16_bit(const Register_8_bit& high, const Register_8_bit& low)
     {
         m_data = static_cast<unsigned short>((high.Value() << 8) | low.Value());
