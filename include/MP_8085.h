@@ -4,6 +4,7 @@
 #include "Register.h"
 #include "Pins.h"
 #include "Bus.h"
+#include "Memory.h"
 
 enum MNEMONICS_8085{
     ACI = 0xCE,
@@ -24,9 +25,14 @@ enum MNEMONICS_8085{
     HLT = 0xEF
 };
 
+std::vector<unsigned char> g_arithematicInstructions = {ADD_A, ADD_B};
+std::vector<unsigned char> g_logicInstructions;
+std::vector<unsigned char> g_dataTransferInstructions = { MOV_A_A, MOV_A_B };
+std::vector<unsigned char> g_branchingInstructions;
+std::vector<unsigned char> g_miscInstructions;
+
 
 /*
-
 Format for control signals through control bus
 ----------------------------------------------
 
@@ -40,63 +46,6 @@ Format for control signals through control bus
 
 
 
-// A general representation of 16-bit address mapped 64k memory
-class Memory_64K
-{
-public:
-    void OnClockTick()
-    {
-        auto control = m_control->GetData();
-
-        // chip select for memory (Active Low)
-        if ((control & 0x01) == HIGH) return;
-
-        // ALE signal
-        if (((control & 0x02) >> 1) == HIGH)
-        {
-            m_addrBuff = Bus_16_bit(*m_addr, *m_addr_data).GetData();
-        }
-        else
-        {
-            // Read (Active Low)
-            if (((control & 0x10)>>4) == LOW)
-            {
-                m_addr_data->PutData((*this)[m_addrBuff]);
-            }
-
-            // Write (Active Low)
-            if (((control & 0x20)>>5) == LOW)
-            {
-                (*this)[m_addrBuff] = m_addr_data->GetData();
-            }
-        }
-    }
-
-    void ConnectBus(Bus_8_bit* addr, Bus_8_bit* addr_data, Bus_8_bit* control)
-    {
-        m_addr = addr;
-        m_addr_data = addr_data;
-        m_control = control;
-    }
-    Memory_64K()
-    {
-        memset(m_data, 0, sizeof(m_data));
-    }
-    void SetData(unsigned short addr, unsigned char data)
-    {
-        m_data[addr] = data;
-    }
-private:
-    unsigned char& operator[](Register_16_bit addr)
-    {
-        return m_data[addr.Value()];
-    }
-    unsigned char m_data[65536];
-    Bus_8_bit* m_addr;
-    Bus_8_bit* m_addr_data;
-    Bus_8_bit* m_control;
-    Register_16_bit m_addrBuff;
-};
 
 enum ALU_8085_OPERATION{
     ADDITION, SUBTRACTION, LOGICAL_AND, LOGICAL_OR, 
@@ -122,7 +71,7 @@ public:
     }
     void Reset(FLAG_TYPE_8085 type)
     {
-        m_data = m_data & (!(1 << type));
+        m_data = m_data & (~(1 << type));
     }
     FLAG_STATE Get(FLAG_TYPE_8085 type)
     {
@@ -146,6 +95,10 @@ public:
             {
                 flags.Set(CARRY);
             }
+            else
+            {
+                flags.Reset(CARRY);
+            }
             accum = static_cast<unsigned char>(tempResult);
         }
     }
@@ -168,10 +121,23 @@ private:
 class CU_8085
 {
 public:
-    void OnClockTick(Pins_8085& pins, ALU_8085& alu)
+    int Decode(unsigned char instruction)
     {
+        
 
+        return 0;
     }
+    CU_8085()
+    {
+        m_maxTStates = 4;
+        m_currentInstruction = 0;
+        m_currentTStates = 0;
+    }
+private:
+    unsigned char m_currentInstruction;
+    int m_instructionType;
+    int m_currentTStates;
+    int m_maxTStates;
 };
 
 
@@ -180,74 +146,109 @@ public:
 class MP_8085
 {
 public:
+    int m_currentTstate;
     void OnClockTick()
     {
-        SIGNALSTATE s0 = m_pins.PinState(PIN_8085::S0);
-        SIGNALSTATE s1 = m_pins.PinState(PIN_8085::S1);
-        SIGNALSTATE io_m = m_pins.PinState(PIN_8085::IO__M_BAR);
+        bool instructionCycleCompleted = false;
+        switch (m_currentTstate)
+        {
+        case 0:
+            m_address_buffer = m_reg_PC.HighByte();
+            m_address_data_buffer = m_reg_PC.LowByte();
+            m_pins.SetPin(ALE);
+            ++m_reg_PC;
+            break;
+        case 1:
+            m_pins.ResetPin(ALE);
+            m_pins.ResetPin(RD_BAR);  // Memory read mode
+            break;
+        case 2:
+            // Opcode recieved
+            m_pins.SetPin(RD_BAR);
+            break;
+        case 3:
+            m_IR = m_address_data_buffer.Value();
 
-        if (io_m == SIGNALSTATE::LOW && s1 == SIGNALSTATE::LOW && s0 == SIGNALSTATE::LOW)
-        {
-            // Halt
-        }
-        else if (io_m == SIGNALSTATE::LOW && s1 == SIGNALSTATE::LOW && s0 == SIGNALSTATE::HIGH)
-        {
-            // Memory WRITE
-        }
-        else if (io_m == SIGNALSTATE::LOW && s1 == SIGNALSTATE::HIGH && s0 == SIGNALSTATE::LOW)
-        {
-            // Memory READ
-        }
-        else if (io_m == SIGNALSTATE::HIGH && s1 == SIGNALSTATE::LOW && s0 == SIGNALSTATE::HIGH)
-        {
-            // IO WRITE
-        }
-        else if (io_m == SIGNALSTATE::HIGH && s1 == SIGNALSTATE::LOW && s0 == SIGNALSTATE::HIGH)    // IO READ
-        {
-        }
-        else if (io_m == SIGNALSTATE::LOW && s1 == SIGNALSTATE::HIGH && s0 == SIGNALSTATE::HIGH)    // Opcode fetch
-        {
-            if (m_pins.PinState(PIN_8085::ALE) == SIGNALSTATE::LOW && m_pins.PinState(PIN_8085::RD_BAR) == SIGNALSTATE::HIGH)
-            {
-                m_address_buffer = m_reg_PC.HighByte();
-                m_address_data_buffer = m_reg_PC.LowByte();
-                m_pins.SetPin(PIN_8085::ALE);
-            }
-            else if (m_pins.PinState(PIN_8085::ALE) == SIGNALSTATE::HIGH && m_pins.PinState(PIN_8085::RD_BAR) == SIGNALSTATE::HIGH)
-            {
-                m_pins.ResetPin(PIN_8085::ALE);
-                m_pins.ResetPin(PIN_8085::RD_BAR);  // Memory read mode
-            }
-            else if (m_pins.PinState(PIN_8085::ALE) == SIGNALSTATE::LOW && m_pins.PinState(PIN_8085::RD_BAR) == SIGNALSTATE::LOW)
-            {
-                m_pins.SetPin(PIN_8085::IO__M_BAR); // Data is recieved
-                m_pins.ResetPin(PIN_8085::S0);      // initialize execute cycle
-                m_pins.ResetPin(PIN_8085::S1);
-            }
-        }
-        else if (io_m == SIGNALSTATE::HIGH && s1 == SIGNALSTATE::LOW && s0 == SIGNALSTATE::LOW) // execution
-        {
-            std::cout << "aah! finally here :v" << std::endl;
-            std::cout << static_cast<unsigned short>(m_address_data_buffer.Value()) << std::endl;
-        }
-        else if (io_m == SIGNALSTATE::HIGH && s1 == SIGNALSTATE::HIGH && s0 == SIGNALSTATE::HIGH)
-        {
-            // Interrupt Acknowledgement
-        }
+        default:
+            int D7 = m_IR[7];
+            int D6 = m_IR[6];
 
-
+            if (D7 == 0 && D6 == 1) // MOV or HLT
+            {
+                int dest = (m_IR.Value() >> 3) & 0x07, src = m_IR.Value() & 0x07;
+                static std::vector<Register_8_bit*> regs = { &m_reg_B, &m_reg_C, &m_reg_D, &m_reg_E, &m_reg_H, &m_reg_L, 0, &m_accumulator };
+                if (src == 6 && dest == 6)  // HLT
+                {
+                    
+                }
+                else if (src == 6) // MOV R, M
+                {
+                    switch (m_currentTstate)
+                    {
+                    case 3:
+                        break;
+                    case 4:
+                        m_address_data_buffer = m_reg_L;
+                        m_address_buffer = m_reg_H;
+                        m_pins.SetPin(ALE);
+                        break;
+                    case 5:
+                        m_pins.ResetPin(ALE);
+                        m_pins.ResetPin(RD_BAR);    // Active low
+                        break;
+                    case 6:
+                        m_pins.SetPin(RD_BAR);
+                        *regs[dest] = m_address_data_buffer.Value();
+                        std::cout << static_cast<int>(m_reg_B.Value()) << std::endl;
+                        instructionCycleCompleted = true;
+                        break;
+                    }
+                }
+                else if (dest == 6) // MOV M, R
+                {
+                    switch (m_currentTstate)
+                    {
+                    case 3:
+                        break;
+                    case 4:
+                        m_address_data_buffer = m_reg_L;
+                        m_address_buffer = m_reg_H;
+                        m_pins.SetPin(ALE);
+                        break;
+                    case 5:
+                        m_pins.ResetPin(ALE);
+                        m_pins.ResetPin(WR_BAR);    // Active low
+                        m_address_data_buffer = *regs[src];
+                        break;
+                    case 6:
+                        m_pins.SetPin(WR_BAR);
+                        instructionCycleCompleted = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    *regs[dest] = *regs[src];
+                    instructionCycleCompleted = true;
+                }
+            }
+            break;
+        }
+        ++m_currentTstate;
         m_dataBus.Update();
-
+        if (instructionCycleCompleted)
+        {
+            m_currentTstate = 0;
+        }
     }
+
 
     void ConnectBus(Bus_8_bit* address_bus, Bus_8_bit* address_data_bus, Bus_8_bit* control_bus)
     {
         address_data_bus->AttachRegister(&m_address_data_buffer);
         address_data_bus->ConnectPins(&m_pins, {AD0, AD1, AD2, AD3, AD4, AD5, AD6, AD7});
-
         address_bus->AttachRegister(&m_address_buffer);
         address_bus->ConnectPins(&m_pins, {A8, A9, A10, A11, A12, A13, A14, A15});
-
         control_bus->AttachRegister(&m_control_buffer);
         control_bus->ConnectPins(&m_pins, { IO__M_BAR, ALE, S0, S1, RD_BAR, WR_BAR, INTA_BAR, HLDA });
     }
@@ -259,9 +260,13 @@ public:
 
     MP_8085()
     {
-        //m_dataBus.AttachRegister(&m_IR);
         m_dataBus.AttachRegister(&m_address_data_buffer);
         m_reg_PC = 0x8000;
+        m_reg_H = 0x80;
+        m_reg_L = 0x05;
+        m_accumulator = 0;
+        m_reg_B = 0xff;
+        m_currentTstate = 0;
     }
 
 private:
@@ -274,6 +279,9 @@ private:
     Register_8_bit m_address_buffer, m_address_data_buffer, m_control_buffer;
     Bus_8_bit m_dataBus;
     Pins_8085 m_pins;
+
+    ALU_8085 m_alu;
+    CU_8085 m_cu;
 };
 
 
@@ -291,8 +299,10 @@ public:
     {
         m_cpuPins->SetPins({ S1, S0 });
         m_cpuPins->ResetPin(IO__M_BAR);
-        m_memory.SetData(0x8000, MVI_A);
-        for (int i = 0; i < 4; i++)
+        m_memory.SetData(0x8000, MOV_A_B);
+        m_memory.SetData(0x8001, 0x46);
+        m_memory.SetData(0x8005, 0x05);
+        for (int i = 0; i < 11; i++)
         {
             m_cpu.OnClockTick();
             m_address_bus.Update();

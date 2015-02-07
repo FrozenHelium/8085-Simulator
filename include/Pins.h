@@ -26,9 +26,9 @@ public:
         return data ? SIGNALSTATE::HIGH : SIGNALSTATE::LOW;
     }
 
-    void SetPinState(int pin, SIGNALSTATE state)
+    void SetPinState(int pin, int state)
     {
-        if (state == SIGNALSTATE::HIGH)
+        if (state == HIGH)
         {
             this->SetPin(pin);
         }
@@ -38,7 +38,7 @@ public:
         }
     }
 
-    void SetPinStates(std::vector<int> pins, std::vector<SIGNALSTATE> values)
+    void SetPinStates(std::vector<int> pins, std::vector<int> values)
     {
         int i = 0;
         for (auto pin : pins)
@@ -117,14 +117,14 @@ public:
     void SetAddress(const Register_16_bit& addr)
     {
         this->SetPinStates(m_addressPins,
-            [addr]()->std::vector < SIGNALSTATE > 
+            [addr]()->std::vector < int > 
             {
-                std::vector<SIGNALSTATE> values;
+                std::vector<int> values;
                 values.resize(16);
                 unsigned short shiftAmount = 0;
                 for (auto &value : values)
                 {
-                    value = ((addr.Value() >> (shiftAmount++)) & 0x0001) ? SIGNALSTATE::HIGH : SIGNALSTATE::LOW;
+                    value = ((addr.Value() >> (shiftAmount++)) & 0x0001) ? HIGH : LOW;
                 }
                 return values;
             }());
@@ -132,14 +132,14 @@ public:
     void SetData(const Register_8_bit& data)
     {
         this->SetPinStates(m_dataPins,
-            [data]()->std::vector < SIGNALSTATE >
+            [data]()->std::vector < int >
             {
-                std::vector<SIGNALSTATE> values;
+                std::vector<int> values;
                 values.resize(16);
                 unsigned short shiftAmount = 0;
                 for (auto &value : values)
                 {
-                    value = ((data.Value() >> (shiftAmount++)) & 0x01) ? SIGNALSTATE::HIGH : SIGNALSTATE::LOW;
+                    value = ((data.Value() >> (shiftAmount++)) & 0x01) ? HIGH : LOW;
                 }
                 return values;
             }());

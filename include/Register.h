@@ -24,6 +24,11 @@ public:
     {
         return m_tristated;
     }
+    int operator[](int index)
+    {
+        // if (index < 0 && index >= sizeof(StorageType))
+        return (m_data >> index) & 0x01;
+    }
     Register() :m_tristated(false){}
 protected:
     StorageType m_data;

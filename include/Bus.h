@@ -23,7 +23,7 @@ public:
             shiftAmount = 0;
             for (int pin : m_pinList[i])
             {
-                pins->SetPinState(pin, ((m_data >> shiftAmount++)&mask)?SIGNALSTATE::HIGH:SIGNALSTATE::LOW);
+                pins->SetPinState(pin, ((m_data >> shiftAmount++)&mask)?HIGH:LOW);
             }
         }
     }
