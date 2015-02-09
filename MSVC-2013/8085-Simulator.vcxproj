@@ -57,6 +57,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -71,6 +72,7 @@
     <ClInclude Include="..\include\Bus.h" />
     <ClInclude Include="..\include\Clock.h" />
     <ClInclude Include="..\include\common.h" />
+    <ClInclude Include="..\include\Flags.h" />
     <ClInclude Include="..\include\Memory.h" />
     <ClInclude Include="..\include\MP_8085.h" />
     <ClInclude Include="..\include\Pins.h" />

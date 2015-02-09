@@ -5,14 +5,13 @@
 #include "Pins.h"
 #include "Bus.h"
 #include "Memory.h"
+#include "Flags.h"
 
 enum MNEMONICS_8085{
     ACI = 0xCE,
     ADC_A = 0x8f, ADC_B = 0x88, ADC_C = 0x89, ADC_D = 0x8A, ADC_E = 0x8B, ADC_H = 0x8C, ADC_L = 0x8D, ADC_M = 0x8E,
     ADD_A = 0x87, ADD_B = 0x80, ADD_C = 0x81, ADD_D = 0x82, ADD_E = 0x83, ADD_H = 0x84, ADD_L = 0x85, ADD_M = 0x86,
-
     MVI_A = 0x3E, MVI_B = 0x06, MVI_C = 0x0E, MVI_D = 0x16, MVI_E = 0x1E, MVI_H = 0x26, MVI_L = 0x2E, MVI_M = 0x36,
-
     MOV_A_A = 0x7F, MOV_A_B = 0x78, MOV_A_C, MOV_A_D, MOV_A_E, MOV_A_H, MOV_A_L, MOV_A_M,
     MOV_B_A, MOV_B_B, MOV_B_C, MOV_B_D, MOV_B_E, MOV_B_H, MOV_B_L, MOV_B_M,
     MOV_C_A, MOV_C_B, MOV_C_C, MOV_C_D, MOV_C_E, MOV_C_H, MOV_C_L, MOV_C_M,
@@ -24,12 +23,6 @@ enum MNEMONICS_8085{
 
     HLT = 0xEF
 };
-
-std::vector<unsigned char> g_arithematicInstructions = {ADD_A, ADD_B};
-std::vector<unsigned char> g_logicInstructions;
-std::vector<unsigned char> g_dataTransferInstructions = { MOV_A_A, MOV_A_B };
-std::vector<unsigned char> g_branchingInstructions;
-std::vector<unsigned char> g_miscInstructions;
 
 
 /*
@@ -45,111 +38,57 @@ Format for control signals through control bus
 */
 
 
-
-
-enum ALU_8085_OPERATION{
-    ADDITION, SUBTRACTION, LOGICAL_AND, LOGICAL_OR, 
-    LEFT_SHIFT, RIGHT_SHIFT, INCREMENT, DECREMENT, 
-    LEFT_ROTATE_WITH_CARRY, RIGHT_ROTATE_WITH_CARRY, 
-    LEFT_ROTATE_WITHOUT_CARRY, RIGHT_ROTATE_WITHOUT_CARRY,
-};
-
-enum FLAG_STATE{
-    SET = 1, RESET = 0
-};
-
-enum FLAG_TYPE_8085{
-    CARRY = 0, PARITY = 2, AUXILARY_CARRY = 4, SIGN = 7, ZERO = 6
-};
-
-class Flags_8085
-{
-public:
-    void Set(FLAG_TYPE_8085 type)
-    {
-        m_data = m_data | (1 << type);
-    }
-    void Reset(FLAG_TYPE_8085 type)
-    {
-        m_data = m_data & (~(1 << type));
-    }
-    FLAG_STATE Get(FLAG_TYPE_8085 type)
-    {
-        return ((m_data >> type) & 0x01) ? FLAG_STATE::SET : FLAG_STATE::RESET;
-    }
-private:
-    unsigned char m_data;
-};
-
-class ALU_8085
-{
-public:
-    void Operate(Register_8_bit& accum, const Register_8_bit& temp, Flags_8085& flags)
-    {
-        unsigned short tempResult;
-        switch (m_operationToPerform)
-        {
-        case ADDITION:
-            tempResult = (accum + temp).Value() + flags.Get(CARRY);
-            if (tempResult > 0xff)
-            {
-                flags.Set(CARRY);
-            }
-            else
-            {
-                flags.Reset(CARRY);
-            }
-            accum = static_cast<unsigned char>(tempResult);
-        }
-    }
-    void Operate(Register_8_bit& accum, Register_8_bit& flags)
-    {
-
-    }
-    void Set(ALU_8085_OPERATION operation)
-    {
-        m_operationToPerform = operation;
-    }
-    ALU_8085()
-    {
-        m_operationToPerform = ADDITION;
-    }
-private:
-    ALU_8085_OPERATION m_operationToPerform;
-};
-
-class CU_8085
-{
-public:
-    int Decode(unsigned char instruction)
-    {
-        
-
-        return 0;
-    }
-    CU_8085()
-    {
-        m_maxTStates = 4;
-        m_currentInstruction = 0;
-        m_currentTStates = 0;
-    }
-private:
-    unsigned char m_currentInstruction;
-    int m_instructionType;
-    int m_currentTStates;
-    int m_maxTStates;
-};
-
-
-
-
 class MP_8085
 {
 public:
     int m_currentTstate;
+    void MemoryReadCycle(int tState)
+    {
+        switch (tState)
+        {
+        case 0:
+            m_address_buffer = m_reg_PC.HighByte();
+            m_address_data_buffer = m_reg_PC.LowByte();
+            m_pins.SetPin(ALE);
+            ++m_reg_PC;
+            break;
+        case 1:
+            m_pins.ResetPin(ALE);
+            m_pins.ResetPin(RD_BAR);  // Memory read mode
+            break;
+        case 2:
+            // data recieved
+            m_pins.SetPin(RD_BAR);
+            break;
+        }
+    }
+    void MemoryWriteCycle(int tState)
+    {
+        switch (tState)
+        {
+        case 0:
+            m_address_buffer = m_reg_PC.HighByte();
+            m_address_data_buffer = m_reg_PC.LowByte();
+            m_pins.SetPin(ALE);
+            ++m_reg_PC;
+            break;
+        case 1:
+            m_pins.ResetPin(ALE);
+            m_pins.ResetPin(WR_BAR);  // Memory read mode
+            break;
+        case 2:
+            // data recieved
+            m_pins.SetPin(WR_BAR);
+            break;
+        }
+    }
     void OnClockTick()
     {
         bool instructionCycleCompleted = false;
+        static std::vector<Register_8_bit*> regs = { &m_reg_B, &m_reg_C, &m_reg_D, &m_reg_E, &m_reg_H, &m_reg_L, 0, &m_accumulator };
+        static std::vector<Register_8_bit*> regPairsHigh = { &m_reg_B, &m_reg_D, &m_reg_H, 0 };
+        static std::vector<Register_8_bit*> regPairsLow = { &m_reg_C, &m_reg_E, &m_reg_L, 0 };
+
         switch (m_currentTstate)
         {
         case 0:
@@ -170,23 +109,17 @@ public:
             m_IR = m_address_data_buffer.Value();
 
         default:
-            int D7 = m_IR[7];
-            int D6 = m_IR[6];
-
-            if (D7 == 0 && D6 == 1) // MOV or HLT
+            if (m_IR[7] == 0 && m_IR[6] == 1) // MOV or HLT
             {
                 int dest = (m_IR.Value() >> 3) & 0x07, src = m_IR.Value() & 0x07;
-                static std::vector<Register_8_bit*> regs = { &m_reg_B, &m_reg_C, &m_reg_D, &m_reg_E, &m_reg_H, &m_reg_L, 0, &m_accumulator };
+
                 if (src == 6 && dest == 6)  // HLT
                 {
-                    
                 }
-                else if (src == 6) // MOV R, M
+                else if (src == 0x06) // MOV R, M
                 {
                     switch (m_currentTstate)
                     {
-                    case 3:
-                        break;
                     case 4:
                         m_address_data_buffer = m_reg_L;
                         m_address_buffer = m_reg_H;
@@ -204,12 +137,10 @@ public:
                         break;
                     }
                 }
-                else if (dest == 6) // MOV M, R
+                else if (dest == 0x06) // MOV M, R
                 {
                     switch (m_currentTstate)
                     {
-                    case 3:
-                        break;
                     case 4:
                         m_address_data_buffer = m_reg_L;
                         m_address_buffer = m_reg_H;
@@ -232,6 +163,166 @@ public:
                     instructionCycleCompleted = true;
                 }
             }
+            else if (m_IR[7] == 0 && m_IR[6] == 0) // initial condition for MVI, LXI, STA, LDA, SHLD, LHLD, STAX, LDAX
+            {
+                if ((m_IR.Value() & 0x07) == 0x06 && ((m_IR.Value() >> 3) & 0x07) == 0x06) // MVI M
+                {
+                    switch (m_currentTstate)
+                    {
+                    case 4:
+                        m_address_buffer = m_reg_PC.HighByte();
+                        m_address_data_buffer = m_reg_PC.LowByte();
+                        m_pins.SetPin(ALE);
+                        ++m_reg_PC;
+                        break;
+                    case 5:
+                        m_pins.ResetPin(ALE);
+                        m_pins.ResetPin(RD_BAR);  // Memory read mode
+                        break;
+                    case 6:
+                        m_pins.SetPin(RD_BAR);
+                        m_temp = m_address_data_buffer;
+                        break;
+                    case 7:
+                        m_address_data_buffer = m_reg_L;
+                        m_address_buffer = m_reg_H;
+                        m_pins.SetPin(ALE);
+                        break;
+                    case 8:
+                        m_pins.ResetPin(ALE);
+                        m_pins.ResetPin(WR_BAR);    // Active low
+                        m_address_data_buffer = m_temp;
+                        break;
+                    case 9:
+                        m_pins.SetPin(WR_BAR);
+                        instructionCycleCompleted = true;
+                        break;
+                    }
+                }
+                else if ((m_IR.Value() & 0x07) == 0x06)  // MVI R
+                {
+                    switch (m_currentTstate)
+                    {
+                    case 4:
+                        m_address_buffer = m_reg_PC.HighByte();
+                        m_address_data_buffer = m_reg_PC.LowByte();
+                        m_pins.SetPin(ALE);
+                        ++m_reg_PC;
+                        break;
+                    case 5:
+                        m_pins.ResetPin(ALE);
+                        m_pins.ResetPin(RD_BAR);  // Memory read mode
+                        break;
+                    case 6:
+                        m_pins.SetPin(RD_BAR);
+                        *regs[(m_IR.Value() >> 3) & 0x07] = m_address_data_buffer;
+                        instructionCycleCompleted = true;
+                        break;
+                    }
+                }
+                else if ((m_IR.Value() & 0x0f) == 0x01)   // LXI
+                {
+                    int dest = (m_IR.Value() >> 4) & 0x03;
+                    switch (m_currentTstate)
+                    {
+                    case 6:
+                        if (dest != 3)
+                        {
+                            *regPairsLow[dest] = m_address_data_buffer;
+                        }
+                        else
+                        {
+                            m_reg_Z = m_address_buffer;
+                        }
+                    case 5:
+                    case 4:
+                        this->MemoryReadCycle(m_currentTstate - 4);
+                        break;
+                    case 9:
+                        if (dest != 3)
+                        {
+                            *regPairsHigh[dest] = m_address_data_buffer;
+                        }
+                        else
+                        {
+                            m_reg_W = m_address_data_buffer;
+                            m_reg_SP = Register_16_bit(m_reg_W, m_reg_Z);
+                        }
+                        instructionCycleCompleted = true;
+                    case 8:
+                    case 7:
+                        this->MemoryReadCycle(m_currentTstate - 7);
+                        break;
+                    }
+
+                }
+                else if ((m_IR.Value() & 0x0f) == 0x02)   // STAX
+                {
+                }
+                else if ((m_IR.Value() & 0x0f) == 0x0A)   // LDAX
+                {
+                }
+                else if (m_IR.Value() == 0x32)  // STA
+                {
+
+                }
+                else if (m_IR.Value() == 0x3A)  // LDA
+                {
+
+                }
+                else if (m_IR.Value() == 0x22)  // SHLD
+                {
+
+                }
+                else if (m_IR.Value() == 0x2A)  // LHLD
+                {
+
+                }
+
+            }
+            else if (m_IR[7] == 1 && m_IR[6] == 1)
+            {
+
+                if ((m_IR.Value() & 0x0f) == 0x05) // PUSH
+                {
+                    int dest = (m_IR.Value() >> 4) & 0x03;
+                }
+                else if ((m_IR.Value() & 0x0f) == 0x01) // POP
+                {
+                    int scr = (m_IR.Value() >> 4) & 0x03;
+                }
+                else if ((m_IR.Value() & 0x07) == 0x02) // Conditional jumps
+                {
+                }
+                else if ((m_IR.Value() & 0x07) == 0x04) // Conditional calls
+                {
+                }
+                else if ((m_IR.Value() & 0x07) == 0x03) // Conditional returns
+                {
+                }
+                else
+                {
+                    if (m_IR.Value() == 0xEB)   // XCHG
+                    {
+                        m_reg_W = m_reg_H;
+                        m_reg_H = m_reg_D;
+                        m_reg_D = m_reg_W;
+
+                        m_reg_Z = m_reg_L;
+                        m_reg_L = m_reg_E;
+                        m_reg_E = m_reg_Z;
+                        instructionCycleCompleted = true;
+                    }
+                    else if (m_IR.Value() == 0xE3)  // XTHL
+                    {
+
+                    }
+                    else if (m_IR.Value() == 0xF9)  // SPHL
+                    {
+
+                    }
+                }
+            }
             break;
         }
         ++m_currentTstate;
@@ -240,15 +331,16 @@ public:
         {
             m_currentTstate = 0;
         }
+        std::cout << static_cast<int>(m_reg_B.Value()) << " " << static_cast<int>(m_reg_C.Value()) << std::endl;
     }
 
 
     void ConnectBus(Bus_8_bit* address_bus, Bus_8_bit* address_data_bus, Bus_8_bit* control_bus)
     {
         address_data_bus->AttachRegister(&m_address_data_buffer);
-        address_data_bus->ConnectPins(&m_pins, {AD0, AD1, AD2, AD3, AD4, AD5, AD6, AD7});
+        address_data_bus->ConnectPins(&m_pins, { AD0, AD1, AD2, AD3, AD4, AD5, AD6, AD7 });
         address_bus->AttachRegister(&m_address_buffer);
-        address_bus->ConnectPins(&m_pins, {A8, A9, A10, A11, A12, A13, A14, A15});
+        address_bus->ConnectPins(&m_pins, { A8, A9, A10, A11, A12, A13, A14, A15 });
         control_bus->AttachRegister(&m_control_buffer);
         control_bus->ConnectPins(&m_pins, { IO__M_BAR, ALE, S0, S1, RD_BAR, WR_BAR, INTA_BAR, HLDA });
     }
@@ -263,7 +355,7 @@ public:
         m_dataBus.AttachRegister(&m_address_data_buffer);
         m_reg_PC = 0x8000;
         m_reg_H = 0x80;
-        m_reg_L = 0x05;
+        m_reg_L = 0x50;
         m_accumulator = 0;
         m_reg_B = 0xff;
         m_currentTstate = 0;
@@ -279,9 +371,6 @@ private:
     Register_8_bit m_address_buffer, m_address_data_buffer, m_control_buffer;
     Bus_8_bit m_dataBus;
     Pins_8085 m_pins;
-
-    ALU_8085 m_alu;
-    CU_8085 m_cu;
 };
 
 
@@ -299,10 +388,11 @@ public:
     {
         m_cpuPins->SetPins({ S1, S0 });
         m_cpuPins->ResetPin(IO__M_BAR);
-        m_memory.SetData(0x8000, MOV_A_B);
-        m_memory.SetData(0x8001, 0x46);
-        m_memory.SetData(0x8005, 0x05);
-        for (int i = 0; i < 11; i++)
+        m_memory.SetData(0x8000, 0x01);
+        m_memory.SetData(0x8001, 0x09);
+        m_memory.SetData(0x8002, 0x05);
+        m_memory.SetData(0x8003, 0x02);
+        for (int i = 0; i < 10; i++)
         {
             m_cpu.OnClockTick();
             m_address_bus.Update();
@@ -310,6 +400,7 @@ public:
             m_control_bus.Update();
             m_memory.OnClockTick();
         }
+        std::cout << static_cast<int>(m_memory[0x8050]) << std::endl;
     }
 private:
     MP_8085 m_cpu;

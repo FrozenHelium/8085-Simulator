@@ -62,11 +62,11 @@ public:
     {
         return Register_16_bit(++m_data);
     }
-    Register_8_bit LowByte()
+    Register_8_bit LowByte() const
     {
         return static_cast<unsigned char>(m_data);
     }
-    Register_8_bit HighByte()
+    Register_8_bit HighByte() const
     {
         return static_cast<unsigned char>(m_data >> 8);
     }

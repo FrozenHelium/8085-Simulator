@@ -49,11 +49,12 @@ public:
     {
         m_data[addr] = data;
     }
-private:
     unsigned char& operator[](Register_16_bit addr)
     {
         return m_data[addr.Value()];
     }
+private:
+    
     unsigned char m_data[65536];
     Bus_8_bit* m_addr;
     Bus_8_bit* m_addr_data;
