@@ -331,7 +331,14 @@ public:
         {
             m_currentTstate = 0;
         }
-        std::cout << static_cast<int>(m_reg_B.Value()) << " " << static_cast<int>(m_reg_C.Value()) << std::endl;
+        std::cout << "A = " << static_cast<int>(m_accumulator.Value()) << std::endl
+            << "B = " << static_cast<int>(m_reg_B.Value()) << std::endl
+            << "C = " << static_cast<int>(m_reg_C.Value()) << std::endl
+            << "D = " << static_cast<int>(m_reg_D.Value()) << std::endl
+            << "E = " << static_cast<int>(m_reg_E.Value()) << std::endl
+            << "H = " << static_cast<int>(m_reg_H.Value()) << std::endl
+            << "L = " << static_cast<int>(m_reg_L.Value()) << std::endl;
+
     }
 
 
@@ -375,6 +382,9 @@ private:
 
 
 
+#include <thread>
+
+
 class MPSystem_8085
 {
 public:
@@ -384,21 +394,26 @@ public:
         m_cpuPins = m_cpu.GetPins();
         m_memory.ConnectBus(&m_address_bus, &m_address_data_bus, &m_control_bus);
     }
-    void Test()
+    void Test(std::vector<unsigned char> program)
     {
         m_cpuPins->SetPins({ S1, S0 });
         m_cpuPins->ResetPin(IO__M_BAR);
-        m_memory.SetData(0x8000, 0x01);
-        m_memory.SetData(0x8001, 0x09);
-        m_memory.SetData(0x8002, 0x05);
-        m_memory.SetData(0x8003, 0x02);
-        for (int i = 0; i < 10; i++)
+
+        unsigned short startAddr = 0x8000;
+        for (auto instr : program)
+        {
+            m_memory.SetData(startAddr++, instr);
+        }
+        for (int i = 0; i < 15; i++)
         {
             m_cpu.OnClockTick();
             m_address_bus.Update();
             m_address_data_bus.Update();
             m_control_bus.Update();
             m_memory.OnClockTick();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::cout << std::endl;
+            
         }
         std::cout << static_cast<int>(m_memory[0x8050]) << std::endl;
     }
