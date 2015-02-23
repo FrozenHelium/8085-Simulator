@@ -7,6 +7,8 @@
 #include "Memory.h"
 #include "Flags.h"
 
+#include <iomanip>
+
 enum MNEMONICS_8085{
     ACI = 0xCE,
     ADC_A = 0x8f, ADC_B = 0x88, ADC_C = 0x89, ADC_D = 0x8A, ADC_E = 0x8B, ADC_H = 0x8C, ADC_L = 0x8D, ADC_M = 0x8E,
@@ -115,6 +117,7 @@ public:
 
                 if (src == 6 && dest == 6)  // HLT
                 {
+                    throw "Halt";
                 }
                 else if (src == 0x06) // MOV R, M
                 {
@@ -226,23 +229,14 @@ public:
                     switch (m_currentTstate)
                     {
                     case 6:
-                        if (dest != 3)
-                        {
-                            *regPairsLow[dest] = m_address_data_buffer;
-                        }
-                        else
-                        {
-                            m_reg_Z = m_address_buffer;
-                        }
+                        if (dest != 3) *regPairsLow[dest] = m_address_data_buffer;
+                        else m_reg_Z = m_address_buffer;
                     case 5:
                     case 4:
                         this->MemoryReadCycle(m_currentTstate - 4);
                         break;
                     case 9:
-                        if (dest != 3)
-                        {
-                            *regPairsHigh[dest] = m_address_data_buffer;
-                        }
+                        if (dest != 3) *regPairsHigh[dest] = m_address_data_buffer;
                         else
                         {
                             m_reg_W = m_address_data_buffer;
@@ -331,13 +325,13 @@ public:
         {
             m_currentTstate = 0;
         }
-        std::cout << "A = " << static_cast<int>(m_accumulator.Value()) << std::endl
-            << "B = " << static_cast<int>(m_reg_B.Value()) << std::endl
-            << "C = " << static_cast<int>(m_reg_C.Value()) << std::endl
-            << "D = " << static_cast<int>(m_reg_D.Value()) << std::endl
-            << "E = " << static_cast<int>(m_reg_E.Value()) << std::endl
-            << "H = " << static_cast<int>(m_reg_H.Value()) << std::endl
-            << "L = " << static_cast<int>(m_reg_L.Value()) << std::endl;
+        std::cout << "A = "<<std::setw(2) << static_cast<int>(m_accumulator.Value()) << ", "
+            << "B = " << std::setw(2) << static_cast<int>(m_reg_B.Value()) << ", "
+            << "C = " << std::setw(2) << static_cast<int>(m_reg_C.Value()) << ", "
+            << "D = " << std::setw(2) << static_cast<int>(m_reg_D.Value()) << ", "
+            << "E = " << std::setw(2) << static_cast<int>(m_reg_E.Value()) << ", "
+            << "H = " << std::setw(2) << static_cast<int>(m_reg_H.Value()) << ", "
+            << "L = " << std::setw(2) << static_cast<int>(m_reg_L.Value()) << std::endl;
 
     }
 
@@ -404,16 +398,23 @@ public:
         {
             m_memory.SetData(startAddr++, instr);
         }
-        for (int i = 0; i < 15; i++)
+        std::cout << std::endl;
+        while (true)
         {
-            m_cpu.OnClockTick();
-            m_address_bus.Update();
-            m_address_data_bus.Update();
-            m_control_bus.Update();
-            m_memory.OnClockTick();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            std::cout << std::endl;
-            
+            try
+            {
+                m_cpu.OnClockTick();
+                m_address_bus.Update();
+                m_address_data_bus.Update();
+                m_control_bus.Update();
+                m_memory.OnClockTick();
+                //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::cout << std::endl;
+            }
+            catch (...)
+            {
+                break;
+            }
         }
         std::cout << static_cast<int>(m_memory[0x8050]) << std::endl;
     }

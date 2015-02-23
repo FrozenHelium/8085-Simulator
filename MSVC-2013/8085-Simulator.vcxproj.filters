@@ -44,5 +44,8 @@
     <ClInclude Include="..\include\Flags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\_8085InstructionParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

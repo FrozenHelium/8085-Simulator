@@ -77,6 +77,7 @@
     <ClInclude Include="..\include\MP_8085.h" />
     <ClInclude Include="..\include\Pins.h" />
     <ClInclude Include="..\include\Register.h" />
+    <ClInclude Include="..\include\_8085InstructionParser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
