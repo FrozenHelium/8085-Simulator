@@ -13,10 +13,31 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{bf42da36-37c3-42fc-92a6-05ba88760c0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{d58e0da0-24e5-4356-9b76-0eb61ef16503}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI\pages">
+      <UniqueIdentifier>{189e3064-47f7-46f2-b924-804240500739}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\UI\Menu.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\UI\UIManager.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\UI\Page.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -44,8 +65,53 @@
     <ClInclude Include="..\include\Flags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\_8085InstructionParser.h">
+    <ClInclude Include="..\include\InstructionParser_8085.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Control.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Button.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Label.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Menu.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\UIManager.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Page.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\Toolbar.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\pages\AboutPage.h">
+      <Filter>Header Files\UI\pages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\pages\HomePage.h">
+      <Filter>Header Files\UI\pages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\pages\pages.h">
+      <Filter>Header Files\UI\pages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\TextView.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\pages\DebugPage.h">
+      <Filter>Header Files\UI\pages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\UI\pages\SettingsPage.h">
+      <Filter>Header Files\UI\pages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

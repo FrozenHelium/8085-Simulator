@@ -1,4 +1,5 @@
-MVI A, 0A
-MOV B, A
-MOV C, B
+MVI A, 1
+MVI B, 2
+ADD B
+JNZ 8004
 HLT

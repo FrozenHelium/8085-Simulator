@@ -23,6 +23,10 @@ public:
     {
         return ((m_data >> type) & 0x01) ? SET : RESET;
     }
+    unsigned char Value()
+    {
+        return m_data;
+    }
 private:
     unsigned char m_data;
 };

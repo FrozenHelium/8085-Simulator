@@ -62,6 +62,10 @@ public:
     {
         return Register_16_bit(++m_data);
     }
+    Register_16_bit operator --()
+    {
+        return Register_16_bit(--m_data);
+    }
     Register_8_bit LowByte() const
     {
         return static_cast<unsigned char>(m_data);

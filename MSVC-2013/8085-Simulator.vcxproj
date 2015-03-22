@@ -44,10 +44,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(GTKDIR)\include\gail-3.0;$(GTKDIR)\include\atk-1.0;$(GTKDIR)\include\gdk-pixbuf-2.0;$(GTKDIR)\include\gtk-3.0;$(GTKDIR)\include\glib-2.0;$(GTKDIR)\include\pango-1.0;$(GTKDIR)\lib\glib-2.0\include;$(GTKDIR)\include\cairo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(GTKDIR)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -57,27 +59,47 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\include;$(GTKDIR)\include\gail-3.0;$(GTKDIR)\include\atk-1.0;$(GTKDIR)\include\gdk-pixbuf-2.0;$(GTKDIR)\include\gtk-3.0;$(GTKDIR)\include\glib-2.0;$(GTKDIR)\include\pango-1.0;$(GTKDIR)\lib\glib-2.0\include;$(GTKDIR)\include\cairo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(GTKDIR)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\Application.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\UI\Menu.cpp" />
+    <ClCompile Include="..\src\UI\Page.cpp" />
+    <ClCompile Include="..\src\UI\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Application.h" />
     <ClInclude Include="..\include\Bus.h" />
     <ClInclude Include="..\include\Clock.h" />
     <ClInclude Include="..\include\common.h" />
+    <ClInclude Include="..\include\Exception.h" />
     <ClInclude Include="..\include\Flags.h" />
     <ClInclude Include="..\include\Memory.h" />
     <ClInclude Include="..\include\MP_8085.h" />
     <ClInclude Include="..\include\Pins.h" />
     <ClInclude Include="..\include\Register.h" />
-    <ClInclude Include="..\include\_8085InstructionParser.h" />
+    <ClInclude Include="..\include\InstructionParser_8085.h" />
+    <ClInclude Include="..\include\UI\Button.h" />
+    <ClInclude Include="..\include\UI\Control.h" />
+    <ClInclude Include="..\include\UI\Label.h" />
+    <ClInclude Include="..\include\UI\Menu.h" />
+    <ClInclude Include="..\include\UI\Page.h" />
+    <ClInclude Include="..\include\UI\pages\AboutPage.h" />
+    <ClInclude Include="..\include\UI\pages\DebugPage.h" />
+    <ClInclude Include="..\include\UI\pages\HomePage.h" />
+    <ClInclude Include="..\include\UI\pages\pages.h" />
+    <ClInclude Include="..\include\UI\pages\SettingsPage.h" />
+    <ClInclude Include="..\include\UI\TextView.h" />
+    <ClInclude Include="..\include\UI\Toolbar.h" />
+    <ClInclude Include="..\include\UI\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
